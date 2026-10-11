@@ -10,8 +10,11 @@ RPMBUILD = rpmbuild --define "_sourcedir $(CURDIR)"
 all:
 	@echo "Use 'make rpm' to download the sources and build the RPM package."
 
+# rpmspec comes with rpm-build; spectool (rpmdevtools) is not available in the CI images
 sources:
-	spectool -g -C $(CURDIR) $(SPEC).spec
+	url=$$(rpmspec -P $(SPEC).spec | awk '/^Source0:/ {print $$2}'); \
+	file=$$(basename $$url); \
+	test -s $$file || curl --fail --silent --show-error --location --output $$file $$url
 
 srpm: sources
 	$(RPMBUILD) -bs $(SPEC).spec

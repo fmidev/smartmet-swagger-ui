@@ -5,7 +5,18 @@ SPEC = smartmet-swagger-ui
 
 RPMBUILD = rpmbuild --define "_sourcedir $(CURDIR)"
 
-.PHONY: all sources srpm rpm unpack clean
+# Installation directories for 'make install' (same layout as the RPM)
+PREFIX ?= /usr
+DATADIR ?= $(PREFIX)/share
+INSTALLDIR = $(DESTDIR)$(DATADIR)/smartmet/swagger-ui
+LICENSEDIR = $(DESTDIR)$(DATADIR)/licenses/$(SPEC)
+
+FILES = swagger-ui-bundle.js swagger-ui-standalone-preset.js swagger-ui.css \
+	favicon-16x16.png favicon-32x32.png
+LICENSES = LICENSE NOTICE swagger-ui-bundle.js.LICENSE.txt \
+	swagger-ui-standalone-preset.js.LICENSE.txt
+
+.PHONY: all sources srpm rpm unpack install clean
 
 all:
 	@echo "Use 'make rpm' to download the sources and build the RPM package."
@@ -28,8 +39,17 @@ unpack: sources
 	rm -rf dist package
 	tar -xzf swagger-ui-dist-*.tgz
 	mkdir -p dist
-	cp package/swagger-ui-bundle.js package/swagger-ui-standalone-preset.js \
-	   package/swagger-ui.css package/favicon-16x16.png package/favicon-32x32.png dist/
+	cp $(addprefix package/,$(FILES)) dist/
+	rm -rf package
+
+# Install the same file set as the RPM directly, without building a package.
+# Supports DESTDIR and PREFIX, e.g. 'make install DESTDIR=/tmp/root'.
+install: sources
+	rm -rf package
+	tar -xzf swagger-ui-dist-*.tgz
+	install -d $(INSTALLDIR) $(LICENSEDIR)
+	install -m 0644 $(addprefix package/,$(FILES)) $(INSTALLDIR)/
+	install -m 0644 $(addprefix package/,$(LICENSES)) $(LICENSEDIR)/
 	rm -rf package
 
 clean:
